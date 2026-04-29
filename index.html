@@ -9,34 +9,34 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg: #f5f7fa;
-  --surface: #ffffff;
-  --surface2: #f0f2f6;
-  --surface3: #e8ebf0;
-  --border: #e2e6ed;
-  --accent: #2563eb;
-  --text: #0f172a;
-  --text-dim: #475569;
-  --text-muted: #94a3b8;
-  --positive: #059669;
-  --neutral: #4f46e5;
-  --negative: #dc2626;
+  --bg: #3c4a58;
+  --surface: #455261;
+  --surface2: #3f4d5c;
+  --surface3: #374450;
+  --border: #526070;
+  --accent: #90a8be;
+  --text: #dce6ee;
+  --text-dim: #a8bbc8;
+  --text-muted: #728090;
+  --positive: #8aaa98;
+  --neutral: #8a9ab8;
+  --negative: #b88e8e;
   --radius: 12px;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:var(--bg); color:var(--text); font-family:'Noto Sans TC',sans-serif; min-height:100vh; }
 body::before {
   content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
-  background: radial-gradient(ellipse 60% 40% at 20% 0%,rgba(37,99,235,.04) 0%,transparent 70%),
-              radial-gradient(ellipse 40% 30% at 80% 100%,rgba(79,70,229,.03) 0%,transparent 70%);
+  background: radial-gradient(ellipse 50% 35% at 15% 0%,rgba(144,168,190,.08) 0%,transparent 65%),
+              radial-gradient(ellipse 40% 30% at 85% 100%,rgba(138,154,184,.06) 0%,transparent 65%);
 }
 .container { max-width:1440px; margin:0 auto; padding:0 28px; position:relative; z-index:1; }
 
 /* HEADER */
-header { border-bottom:1px solid var(--border); padding:16px 0; position:sticky; top:0; z-index:100; background:rgba(245,247,250,.92); backdrop-filter:blur(16px); }
+header { border-bottom:1px solid var(--border); padding:16px 0; position:sticky; top:0; z-index:100; background:rgba(60,74,88,.94); backdrop-filter:blur(16px); }
 .header-inner { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
 .brand { display:flex; align-items:center; gap:12px; }
-.brand-mark { width:36px; height:36px; background:var(--accent); border-radius:8px; display:grid; place-items:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:#fff; letter-spacing:-.5px; flex-shrink:0; }
+.brand-mark { width:36px; height:36px; background:#90a8be; border-radius:8px; display:grid; place-items:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:#fff; letter-spacing:-.5px; flex-shrink:0; }
 .brand-text h1 { font-size:15px; font-weight:700; line-height:1.2; }
 .brand-text p { font-size:11px; color:var(--text-muted); font-family:'Space Grotesk',sans-serif; letter-spacing:.3px; }
 .header-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
@@ -155,9 +155,9 @@ header { border-bottom:1px solid var(--border); padding:16px 0; position:sticky;
 .news-title a:hover { color:var(--accent); }
 .cell { font-size:11px; color:var(--text-dim); font-family:'Space Grotesk',sans-serif; }
 .sent-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 9px; border-radius:10px; font-size:10px; font-weight:600; font-family:'Noto Sans TC',sans-serif; }
-.sent-badge.正面 { background:rgba(16,185,129,.12); color:#10b981; }
-.sent-badge.中立 { background:rgba(99,102,241,.12); color:#818cf8; }
-.sent-badge.負面 { background:rgba(239,68,68,.12); color:#ef4444; }
+.sent-badge.正面 { background:rgba(122,170,146,.2); color:#7aaa92; }
+.sent-badge.中立 { background:rgba(120,152,184,.2); color:#88a8c8; }
+.sent-badge.負面 { background:rgba(184,120,120,.2); color:#c09090; }
 .dept-tag { display:inline-block; padding:2px 8px; border-radius:8px; font-size:10px; font-family:'Space Grotesk',sans-serif; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:90px; }
 .pagination { display:flex; align-items:center; justify-content:space-between; padding:12px 18px; background:var(--surface2); border-top:1px solid var(--border); border-radius:0 0 var(--radius) var(--radius); }
 .page-info { font-size:11px; color:var(--text-muted); font-family:'Space Grotesk',sans-serif; }
@@ -206,10 +206,10 @@ footer { text-align:center; padding:20px; font-size:10px; color:var(--text-muted
   </div>
 
   <div class="kpi-row">
-    <div class="kpi" style="--kpi-color:#3b82f6"><div class="kpi-label">總露出則數</div><div class="kpi-num" id="kTotal">–</div><div class="kpi-note" id="kDept">–</div></div>
-    <div class="kpi" style="--kpi-color:#10b981"><div class="kpi-label">正面報導</div><div class="kpi-num" id="kPos">–</div><div class="kpi-note" id="kPosPct">–</div></div>
-    <div class="kpi" style="--kpi-color:#6366f1"><div class="kpi-label">中立報導</div><div class="kpi-num" id="kNeu">–</div><div class="kpi-note" id="kNeuPct">–</div></div>
-    <div class="kpi" style="--kpi-color:#ef4444"><div class="kpi-label">負面報導</div><div class="kpi-num" id="kNeg">–</div><div class="kpi-note" id="kNegPct">–</div></div>
+    <div class="kpi" style="--kpi-color:#90a8be"><div class="kpi-label">總露出則數</div><div class="kpi-num" id="kTotal">–</div><div class="kpi-note" id="kDept">–</div></div>
+    <div class="kpi" style="--kpi-color:#7aaa92"><div class="kpi-label">正面報導</div><div class="kpi-num" id="kPos">–</div><div class="kpi-note" id="kPosPct">–</div></div>
+    <div class="kpi" style="--kpi-color:#8a9ab8"><div class="kpi-label">中立報導</div><div class="kpi-num" id="kNeu">–</div><div class="kpi-note" id="kNeuPct">–</div></div>
+    <div class="kpi" style="--kpi-color:#b88e8e"><div class="kpi-label">負面報導</div><div class="kpi-num" id="kNeg">–</div><div class="kpi-note" id="kNegPct">–</div></div>
   </div>
 
   <div style="margin-bottom:28px">
@@ -276,14 +276,14 @@ footer { text-align:center; padding:20px; font-size:10px; color:var(--text-muted
 const REPO_BASE = 'https://jarenhsu.github.io/iii-newsroom';
 
 const DEPT_META = [
-  {id:"digital",  name:"數位轉型研究院", short:"數轉院", color:"#34d399", patterns:["數位轉型研究院","數轉院"]},
-  {id:"software", name:"軟體技術研究院", short:"軟體院", color:"#60a5fa", patterns:["軟體技術研究院","軟體院"]},
-  {id:"ai",       name:"人工智慧研究院", short:"AI院",   color:"#a78bfa", patterns:["人工智慧研究院","AI院","ai院","AI研究院"]},
-  {id:"cybersec", name:"資安科技研究所", short:"資安所", color:"#f87171", patterns:["資安科技研究所","資安所"]},
-  {id:"education",name:"數位教育研究所", short:"教研所", color:"#fbbf24", patterns:["數位教育研究所","教研所","數位教育所"]},
-  {id:"mic",      name:"產業情報研究所", short:"MIC",    color:"#fb923c", patterns:["產業情報研究所","MIC","IEK"]},
-  {id:"law",      name:"科技法律研究所", short:"科法所", color:"#e879f9", patterns:["科技法律研究所","科法所"]},
-  {id:"other",    name:"其他/機構整體",  short:"其他",   color:"#64748b", patterns:[]},
+  {id:"digital",  name:"數位轉型研究院", short:"數轉院", color:"#7aaa92", patterns:["數位轉型研究院","數轉院"]},
+  {id:"software", name:"軟體技術研究院", short:"軟體院", color:"#7898b8", patterns:["軟體技術研究院","軟體院"]},
+  {id:"ai",       name:"人工智慧研究院", short:"AI院",   color:"#9888c0", patterns:["人工智慧研究院","AI院","ai院","AI研究院"]},
+  {id:"cybersec", name:"資安科技研究所", short:"資安所", color:"#b87878", patterns:["資安科技研究所","資安所"]},
+  {id:"education",name:"數位教育研究所", short:"教研所", color:"#b8a060", patterns:["數位教育研究所","教研所","數位教育所"]},
+  {id:"mic",      name:"產業情報研究所", short:"MIC",    color:"#b8825a", patterns:["產業情報研究所","MIC","IEK"]},
+  {id:"law",      name:"科技法律研究所", short:"科法所", color:"#a878b0", patterns:["科技法律研究所","科法所"]},
+  {id:"other",    name:"其他/機構整體",  short:"其他",   color:"#728090", patterns:[]},
 ];
 
 // ── State ──
@@ -294,7 +294,7 @@ let activeDept = 'all';
 let sentFilter = 'all';
 let searchQ = '';
 let curPage = 1;
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 5;
 let cDaily=null, cSent=null, cDept=null, cCompare=null;
 
 // ── Boot: fetch manifest ──
@@ -455,18 +455,18 @@ function renderDailyChart(data) {
   const ctx = document.getElementById('dailyChart').getContext('2d');
   if (cDaily) cDaily.destroy();
   const g = ctx.createLinearGradient(0,0,0,220);
-  g.addColorStop(0,'rgba(37,99,235,.15)'); g.addColorStop(1,'rgba(37,99,235,0)');
-  cDaily = new Chart(ctx,{type:'line',data:{labels,datasets:[{data:counts,borderColor:'#3b82f6',backgroundColor:g,borderWidth:1.5,fill:true,tension:.4,pointRadius:counts.map(c=>c===peak?5:2),pointBackgroundColor:counts.map(c=>c===peak?'#3b82f6':'#ffffff'),pointBorderColor:'#3b82f6',pointBorderWidth:1.5}]},
-    options:{responsive:true,plugins:{legend:{display:false},tooltip:{backgroundColor:'#ffffff',borderColor:'#e2e6ed',borderWidth:1,titleColor:'#0f172a',bodyColor:'#475569',callbacks:{label:c=>`${c.raw} 則`}}},
-    scales:{x:{grid:{color:'rgba(0,0,0,.06)'},ticks:{color:'#94a3b8',font:{size:10},maxRotation:0}},y:{grid:{color:'rgba(0,0,0,.06)'},ticks:{color:'#94a3b8',font:{size:10}},beginAtZero:true}}}});
+  g.addColorStop(0,'rgba(144,168,190,.28)'); g.addColorStop(1,'rgba(144,168,190,0)');
+  cDaily = new Chart(ctx,{type:'line',data:{labels,datasets:[{data:counts,borderColor:'#90a8be',backgroundColor:g,borderWidth:1.5,fill:true,tension:.4,pointRadius:counts.map(c=>c===peak?5:2),pointBackgroundColor:counts.map(c=>c===peak?'#90a8be':'#ffffff'),pointBorderColor:'#90a8be',pointBorderWidth:1.5}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{backgroundColor:'#374450',borderColor:'#526070',borderWidth:1,titleColor:'#dce6ee',bodyColor:'#a8bbc8',callbacks:{label:c=>`${c.raw} 則`}}},
+    scales:{x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#728090',font:{size:10},maxRotation:0}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#728090',font:{size:10}},beginAtZero:true}}}});
 }
 
 function renderSentChart(data) {
   const ctx = document.getElementById('sentChart').getContext('2d');
   if (cSent) cSent.destroy();
   document.getElementById('dPct').textContent = (data.positive/data.total*100).toFixed(0)+'%';
-  cSent = new Chart(ctx,{type:'doughnut',data:{labels:['正面','中立','負面'],datasets:[{data:[data.positive,data.neutral,data.negative],backgroundColor:['rgba(16,185,129,.8)','rgba(99,102,241,.8)','rgba(239,68,68,.8)'],borderColor:'#ffffff',borderWidth:3,hoverOffset:3}]},
-    options:{responsive:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{backgroundColor:'#ffffff',borderColor:'#e2e6ed',borderWidth:1,titleColor:'#0f172a',bodyColor:'#475569'}}}});
+  cSent = new Chart(ctx,{type:'doughnut',data:{labels:['正面','中立','負面'],datasets:[{data:[data.positive,data.neutral,data.negative],backgroundColor:['rgba(122,170,146,.85)','rgba(120,152,184,.85)','rgba(184,120,120,.85)'],borderColor:'#455261',borderWidth:3,hoverOffset:3}]},
+    options:{responsive:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{backgroundColor:'#374450',borderColor:'#526070',borderWidth:1,titleColor:'#dce6ee',bodyColor:'#a8bbc8'}}}});
   document.getElementById('sentLegend').innerHTML = [{l:'正面',c:data.positive,col:'#10b981'},{l:'中立',c:data.neutral,col:'#818cf8'},{l:'負面',c:data.negative,col:'#ef4444'}]
     .map(i=>`<div class="legend-row"><span class="legend-left"><span class="legend-dot" style="background:${i.col}"></span>${i.l}</span><span class="legend-val">${i.c}</span></div>`).join('');
 }
@@ -483,7 +483,7 @@ function renderDeptChart(data) {
         borderColor:filtered.map(d=>DEPT_META.find(m=>m.id===d.id)?.color||'#64748b'),
         borderWidth:1.5,hoverOffset:4}]},
     options:{responsive:true,cutout:'55%',plugins:{
-      legend:{position:'right',labels:{color:'#64748b',font:{size:10},boxWidth:8,padding:10}},
+      legend:{position:'right',labels:{color:'#a8bbc8',font:{size:10},boxWidth:8,padding:10}},
       tooltip:{backgroundColor:'#1c2333',borderColor:'#21283a',borderWidth:1,callbacks:{label:c=>`${c.label}: ${c.raw}則 (${(c.raw/data.total*100).toFixed(1)}%)`}}}}});
 }
 
@@ -502,11 +502,11 @@ async function renderCompareChart() {
   cCompare = new Chart(ctx,{type:'bar',
     data:{labels:loaded.map(m=>m.replace('-','/')),
       datasets:[
-        {label:'總則數',data:loaded.map(m=>cache[m].total),backgroundColor:'rgba(59,130,246,.2)',borderColor:'#3b82f6',borderWidth:1.5,borderRadius:3},
-        {label:'正面',  data:loaded.map(m=>cache[m].positive),backgroundColor:'rgba(16,185,129,.45)',borderColor:'#10b981',borderWidth:1.5,borderRadius:3}
+        {label:'總則數',data:loaded.map(m=>cache[m].total),backgroundColor:'rgba(144,168,190,.2)',borderColor:'#90a8be',borderWidth:1.5,borderRadius:3},
+        {label:'正面',  data:loaded.map(m=>cache[m].positive),backgroundColor:'rgba(122,170,146,.45)',borderColor:'#7aaa92',borderWidth:1.5,borderRadius:3}
       ]},
-    options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',font:{size:10},boxWidth:8}},tooltip:{backgroundColor:'#ffffff',borderColor:'#e2e6ed',borderWidth:1,titleColor:'#0f172a',bodyColor:'#475569'}},
-      scales:{x:{grid:{display:false},ticks:{color:'#94a3b8',font:{size:10}}},y:{grid:{color:'rgba(0,0,0,.06)'},ticks:{color:'#94a3b8',font:{size:10}},beginAtZero:true}}}});
+    options:{responsive:true,plugins:{legend:{labels:{color:'#728090',font:{size:10},boxWidth:8}},tooltip:{backgroundColor:'#374450',borderColor:'#526070',borderWidth:1,titleColor:'#dce6ee',bodyColor:'#a8bbc8'}},
+      scales:{x:{grid:{display:false},ticks:{color:'#728090',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#728090',font:{size:10}},beginAtZero:true}}}});
 }
 
 // ── Table ──
