@@ -612,7 +612,7 @@ function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 let isYearly = false;
 let cYearlyTrend=null, cYearlyDept=null, cYearlyBar=null;
 
-function switchYearly() {
+async function switchYearly() {
   isYearly = true;
   document.getElementById('yearlyView').style.display = 'block';
   document.getElementById('monthlyView').style.display = 'none';
@@ -620,6 +620,10 @@ function switchYearly() {
   document.getElementById('yearlyTab').style.color = '#2a3540';
   document.getElementById('yearlyTab').style.fontWeight = '700';
   document.querySelectorAll('.month-tab').forEach(b => b.classList.remove('active'));
+
+  // 先把所有月份資料都載入 cache
+  await Promise.all(months.map(m => fetchMonth(m)));
+
   renderYearlyKPIs();
   renderYearly();
 }
