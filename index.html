@@ -620,7 +620,34 @@ function switchYearly() {
   document.getElementById('yearlyTab').style.color = '#2a3540';
   document.getElementById('yearlyTab').style.fontWeight = '700';
   document.querySelectorAll('.month-tab').forEach(b => b.classList.remove('active'));
+  renderYearlyKPIs();
   renderYearly();
+}
+
+function renderYearlyKPIs() {
+  const loaded = months.filter(m => cache[m]);
+  if (!loaded.length) return;
+
+  const total    = loaded.reduce((s,m) => s + cache[m].total,    0);
+  const positive = loaded.reduce((s,m) => s + cache[m].positive, 0);
+  const neutral  = loaded.reduce((s,m) => s + cache[m].neutral,  0);
+  const negative = loaded.reduce((s,m) => s + cache[m].negative, 0);
+  const deptHit  = [...new Set(loaded.flatMap(m =>
+    cache[m].depts.filter(d=>d.id!=='hq'&&d.total>0).map(d=>d.id)
+  ))].length;
+
+  const range = loaded[0].replace('-','/') + ' ～ ' + loaded[loaded.length-1].replace('-','/');
+  document.getElementById('pageTitle').textContent = `${loaded[0].slice(0,4)} 年度總覽`;
+  document.getElementById('pageSubtitle').textContent = `${range}　累計 ${total} 則新聞露出`;
+
+  document.getElementById('kTotal').textContent = total.toLocaleString();
+  document.getElementById('kDept').textContent = `${deptHit} 個業務單位有露出`;
+  document.getElementById('kPos').textContent = positive.toLocaleString();
+  document.getElementById('kPosPct').textContent = `佔比 ${(positive/total*100).toFixed(1)}%`;
+  document.getElementById('kNeu').textContent = neutral.toLocaleString();
+  document.getElementById('kNeuPct').textContent = `佔比 ${(neutral/total*100).toFixed(1)}%`;
+  document.getElementById('kNeg').textContent = negative.toLocaleString();
+  document.getElementById('kNegPct').textContent = `佔比 ${(negative/total*100).toFixed(1)}%`;
 }
 
 function switchMonthFromYearly(m) {
