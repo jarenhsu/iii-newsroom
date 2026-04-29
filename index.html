@@ -208,6 +208,7 @@ footer { text-align:center; padding:24px; font-size:20px; color:var(--text-muted
       </div>
       <div class="header-right">
         <div class="month-tabs" id="monthTabs"></div>
+        <button class="month-tab" id="yearlyTab" onclick="switchYearly()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-left:6px;">📊 年度總覽</button>
       </div>
     </div>
   </div>
@@ -229,6 +230,30 @@ footer { text-align:center; padding:24px; font-size:20px; color:var(--text-muted
     <div class="kpi" style="--kpi-color:#d47878"><div class="kpi-label">負面報導</div><div class="kpi-num" id="kNeg">–</div><div class="kpi-note" id="kNegPct">–</div></div>
   </div>
 
+  <!-- Yearly Overview -->
+  <div id="yearlyView" style="display:none;margin-bottom:28px">
+    <div class="section-label">年度各月份部門露出趨勢</div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header"><span class="card-title">各部門月份露出趨勢</span><span class="card-badge" id="yearlyRange">–</span></div>
+      <canvas id="yearlyTrendChart" height="120"></canvas>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <div class="card">
+        <div class="card-header"><span class="card-title">年度部門露出佔比</span></div>
+        <canvas id="yearlyDeptChart" height="220"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">月份總則數對比</span></div>
+        <canvas id="yearlyBarChart" height="220"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">各部門月份明細</span></div>
+      <div id="yearlyTable" style="overflow-x:auto"></div>
+    </div>
+  </div>
+
+  <div id="monthlyView">
   <div style="margin-bottom:28px">
     <div class="section-label">各部門露出概覽 — 點擊部門卡片篩選新聞</div>
     <div class="dept-cards" id="deptCards"></div>
@@ -271,6 +296,8 @@ footer { text-align:center; padding:24px; font-size:20px; color:var(--text-muted
       <div class="pagination" id="pagination"></div>
     </div>
   </div>
+
+  </div><!-- end monthlyView -->
 
   <div class="charts-row">
     <div class="card"><div class="card-header"><span class="card-title">每日露出趨勢</span><span class="card-badge" id="peakBadge">–</span></div><canvas id="dailyChart" height="110"></canvas></div>
@@ -354,6 +381,7 @@ function buildTabs() {
 }
 
 async function switchMonth(m) {
+  if (isYearly) switchMonthFromYearly();
   curMonth = m;
   activeDept = 'all';
   sentFilter = 'all';
@@ -578,6 +606,166 @@ function goPage(n){ curPage=n; renderTable(); document.querySelector('.news-sect
 function setSent(f,btn){ sentFilter=f; curPage=1; document.querySelectorAll('.chip').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderTable(); }
 function onSearch(){ searchQ=document.getElementById('searchInput').value; curPage=1; renderTable(); }
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+
+// ── Yearly Overview ──────────────────────────────────────────────────────────
+let isYearly = false;
+let cYearlyTrend=null, cYearlyDept=null, cYearlyBar=null;
+
+function switchYearly() {
+  isYearly = true;
+  document.getElementById('yearlyView').style.display = 'block';
+  document.getElementById('monthlyView').style.display = 'none';
+  document.getElementById('yearlyTab').style.background = 'var(--gold)';
+  document.getElementById('yearlyTab').style.color = '#2a3540';
+  document.getElementById('yearlyTab').style.fontWeight = '700';
+  document.querySelectorAll('.month-tab').forEach(b => b.classList.remove('active'));
+  renderYearly();
+}
+
+function switchMonthFromYearly(m) {
+  isYearly = false;
+  document.getElementById('yearlyView').style.display = 'none';
+  document.getElementById('monthlyView').style.display = 'block';
+  document.getElementById('yearlyTab').style.background = '';
+  document.getElementById('yearlyTab').style.color = '';
+  document.getElementById('yearlyTab').style.fontWeight = '';
+}
+
+function renderYearly() {
+  const loaded = months.filter(m => cache[m]);
+  if (!loaded.length) return;
+
+  document.getElementById('yearlyRange').textContent =
+    loaded[0].replace('-','/') + ' ～ ' + loaded[loaded.length-1].replace('-','/');
+
+  // ── Trend chart: each dept as a line ──
+  const ctx1 = document.getElementById('yearlyTrendChart').getContext('2d');
+  if (cYearlyTrend) cYearlyTrend.destroy();
+  const datasets = DEPT_META.map(meta => ({
+    label: meta.short,
+    data: loaded.map(m => (cache[m].depts.find(d=>d.id===meta.id)||{total:0}).total),
+    borderColor: meta.color,
+    backgroundColor: meta.color + '22',
+    borderWidth: 2, fill: false, tension: 0.4,
+    pointRadius: 5, pointBackgroundColor: meta.color,
+  }));
+  cYearlyTrend = new Chart(ctx1, {
+    type: 'line',
+    data: { labels: loaded.map(m=>m.replace('-','/')), datasets },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color:'#a8bbc8', font:{size:13}, boxWidth:10, padding:12 } },
+        tooltip: { backgroundColor:'#374450', borderColor:'#526070', borderWidth:1, titleColor:'#dce6ee', bodyColor:'#a8bbc8' }
+      },
+      scales: {
+        x: { grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#728090',font:{size:13}} },
+        y: { grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#728090',font:{size:13}}, beginAtZero:true }
+      }
+    }
+  });
+
+  // ── Dept donut: aggregate totals ──
+  const ctx2 = document.getElementById('yearlyDeptChart').getContext('2d');
+  if (cYearlyDept) cYearlyDept.destroy();
+  const aggDepts = DEPT_META.map(meta => ({
+    ...meta,
+    total: loaded.reduce((s,m) => s + (cache[m].depts.find(d=>d.id===meta.id)||{total:0}).total, 0)
+  })).filter(d => d.total > 0);
+  const yearlyTotal = aggDepts.reduce((s,d)=>s+d.total,0);
+  cYearlyDept = new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+      labels: aggDepts.map(d=>d.short),
+      datasets: [{ data: aggDepts.map(d=>d.total),
+        backgroundColor: aggDepts.map(d=>d.color+'cc'),
+        borderColor: aggDepts.map(d=>d.color),
+        borderWidth: 1.5, hoverOffset: 4 }]
+    },
+    options: {
+      responsive: true, cutout: '55%',
+      plugins: {
+        legend: { position:'right', labels:{color:'#a8bbc8',font:{size:13},boxWidth:8,padding:12} },
+        tooltip: { backgroundColor:'#374450', borderColor:'#526070', borderWidth:1, titleColor:'#dce6ee', bodyColor:'#a8bbc8',
+          callbacks: { label: c=>`${c.label}: ${c.raw}則 (${(c.raw/yearlyTotal*100).toFixed(1)}%)` } }
+      }
+    }
+  });
+
+  // ── Bar: monthly totals ──
+  const ctx3 = document.getElementById('yearlyBarChart').getContext('2d');
+  if (cYearlyBar) cYearlyBar.destroy();
+  cYearlyBar = new Chart(ctx3, {
+    type: 'bar',
+    data: {
+      labels: loaded.map(m=>m.replace('-','/')),
+      datasets: [
+        { label:'總則數', data: loaded.map(m=>cache[m].total), backgroundColor:'rgba(144,168,190,.22)', borderColor:'#7ab0d0', borderWidth:1.5, borderRadius:4 },
+        { label:'正面',   data: loaded.map(m=>cache[m].positive), backgroundColor:'rgba(110,196,154,.45)', borderColor:'#6ec49a', borderWidth:1.5, borderRadius:4 },
+        { label:'負面',   data: loaded.map(m=>cache[m].negative), backgroundColor:'rgba(212,120,120,.45)', borderColor:'#d47878', borderWidth:1.5, borderRadius:4 },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels:{color:'#a8bbc8',font:{size:13},boxWidth:8} },
+        tooltip: { backgroundColor:'#374450', borderColor:'#526070', borderWidth:1, titleColor:'#dce6ee', bodyColor:'#a8bbc8' }
+      },
+      scales: {
+        x: { grid:{display:false}, ticks:{color:'#728090',font:{size:13}} },
+        y: { grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#728090',font:{size:13}}, beginAtZero:true }
+      }
+    }
+  });
+
+  // ── Summary table ──
+  const aggByDept = DEPT_META.map(meta => {
+    const row = { id:meta.id, name:meta.name, short:meta.short, color:meta.color };
+    let total=0, pos=0, neu=0, neg=0;
+    loaded.forEach(m => {
+      const d = cache[m].depts.find(x=>x.id===meta.id)||{total:0,positive:0,neutral:0,negative:0};
+      row[m] = d.total;
+      total+=d.total; pos+=d.positive; neu+=d.neutral; neg+=d.negative;
+    });
+    row._total=total; row._pos=pos; row._neu=neu; row._neg=neg;
+    return row;
+  }).filter(d=>d._total>0).sort((a,b)=>b._total-a._total);
+
+  const tableHtml = `
+    <table style="width:100%;border-collapse:collapse;font-size:18px;font-family:'Space Grotesk',sans-serif">
+      <thead>
+        <tr style="background:var(--surface2);color:var(--text-muted)">
+          <th style="padding:12px 16px;text-align:left;border-bottom:1px solid var(--border)">部門</th>
+          ${loaded.map(m=>`<th style="padding:12px 16px;text-align:center;border-bottom:1px solid var(--border)">${m.replace('-','/')}</th>`).join('')}
+          <th style="padding:12px 16px;text-align:center;border-bottom:1px solid var(--border)">合計</th>
+          <th style="padding:12px 16px;text-align:center;border-bottom:1px solid var(--border)">正面</th>
+          <th style="padding:12px 16px;text-align:center;border-bottom:1px solid var(--border)">負面</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${aggByDept.map(d=>`
+          <tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="switchMonth('${months[months.length-1]}')">
+            <td style="padding:13px 16px;font-weight:600">
+              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${d.color};margin-right:8px"></span>
+              ${d.name}
+            </td>
+            ${loaded.map(m=>`<td style="padding:13px 16px;text-align:center;color:${d[m]>0?'var(--text)':'var(--text-muted)'}">${d[m]||'–'}</td>`).join('')}
+            <td style="padding:13px 16px;text-align:center;font-weight:700;color:var(--gold)">${d._total}</td>
+            <td style="padding:13px 16px;text-align:center;color:#6ec49a">${d._pos}</td>
+            <td style="padding:13px 16px;text-align:center;color:#d47878">${d._neg}</td>
+          </tr>`).join('')}
+        <tr style="background:var(--surface2);font-weight:700">
+          <td style="padding:13px 16px;color:var(--gold)">月份合計</td>
+          ${loaded.map(m=>`<td style="padding:13px 16px;text-align:center;color:var(--gold)">${cache[m].total}</td>`).join('')}
+          <td style="padding:13px 16px;text-align:center;color:var(--gold)">${loaded.reduce((s,m)=>s+cache[m].total,0)}</td>
+          <td style="padding:13px 16px;text-align:center;color:#6ec49a">${loaded.reduce((s,m)=>s+cache[m].positive,0)}</td>
+          <td style="padding:13px 16px;text-align:center;color:#d47878">${loaded.reduce((s,m)=>s+cache[m].negative,0)}</td>
+        </tr>
+      </tbody>
+    </table>`;
+  document.getElementById('yearlyTable').innerHTML = tableHtml;
+}
 
 init();
 </script>
