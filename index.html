@@ -9,31 +9,31 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg: #05080f;
-  --surface: #0d1117;
-  --surface2: #161b25;
-  --surface3: #1c2333;
-  --border: #21283a;
-  --accent: #3b82f6;
-  --text: #e2e8f0;
-  --text-dim: #94a3b8;
-  --text-muted: #4b5878;
-  --positive: #10b981;
-  --neutral: #6366f1;
-  --negative: #ef4444;
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --surface2: #f0f2f6;
+  --surface3: #e8ebf0;
+  --border: #e2e6ed;
+  --accent: #2563eb;
+  --text: #0f172a;
+  --text-dim: #475569;
+  --text-muted: #94a3b8;
+  --positive: #059669;
+  --neutral: #4f46e5;
+  --negative: #dc2626;
   --radius: 12px;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:var(--bg); color:var(--text); font-family:'Noto Sans TC',sans-serif; min-height:100vh; }
 body::before {
   content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
-  background: radial-gradient(ellipse 60% 40% at 20% 0%,rgba(59,130,246,.06) 0%,transparent 70%),
-              radial-gradient(ellipse 40% 30% at 80% 100%,rgba(99,102,241,.05) 0%,transparent 70%);
+  background: radial-gradient(ellipse 60% 40% at 20% 0%,rgba(37,99,235,.04) 0%,transparent 70%),
+              radial-gradient(ellipse 40% 30% at 80% 100%,rgba(79,70,229,.03) 0%,transparent 70%);
 }
 .container { max-width:1440px; margin:0 auto; padding:0 28px; position:relative; z-index:1; }
 
 /* HEADER */
-header { border-bottom:1px solid var(--border); padding:16px 0; position:sticky; top:0; z-index:100; background:rgba(5,8,15,.88); backdrop-filter:blur(16px); }
+header { border-bottom:1px solid var(--border); padding:16px 0; position:sticky; top:0; z-index:100; background:rgba(245,247,250,.92); backdrop-filter:blur(16px); }
 .header-inner { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
 .brand { display:flex; align-items:center; gap:12px; }
 .brand-mark { width:36px; height:36px; background:var(--accent); border-radius:8px; display:grid; place-items:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:#fff; letter-spacing:-.5px; flex-shrink:0; }
@@ -270,7 +270,7 @@ footer { text-align:center; padding:20px; font-size:10px; color:var(--text-muted
 
 </div></div>
 </main>
-<footer>資策會（III）新聞媒體監測月報 · 資料來源：Opview Insight · <a href="https://github.com/jarenhsu/iii-newsroom" style="color:var(--text-muted);text-decoration:none">GitHub</a></footer>
+<footer>資策會（III）新聞媒體監測月報 · 資料來源：Opview Insight · <a href="https://github.com/jarenhsu/iii-newsroom" style="color:var(--text-muted);text-decoration:none;transition:color .15s" onmouseover="this.style.color='#2563eb'" onmouseout="this.style.color=''">GitHub</a></footer>
 
 <script>
 const REPO_BASE = 'https://jarenhsu.github.io/iii-newsroom';
@@ -455,18 +455,18 @@ function renderDailyChart(data) {
   const ctx = document.getElementById('dailyChart').getContext('2d');
   if (cDaily) cDaily.destroy();
   const g = ctx.createLinearGradient(0,0,0,220);
-  g.addColorStop(0,'rgba(59,130,246,.25)'); g.addColorStop(1,'rgba(59,130,246,0)');
-  cDaily = new Chart(ctx,{type:'line',data:{labels,datasets:[{data:counts,borderColor:'#3b82f6',backgroundColor:g,borderWidth:1.5,fill:true,tension:.4,pointRadius:counts.map(c=>c===peak?5:2),pointBackgroundColor:counts.map(c=>c===peak?'#3b82f6':'#05080f'),pointBorderColor:'#3b82f6',pointBorderWidth:1.5}]},
-    options:{responsive:true,plugins:{legend:{display:false},tooltip:{backgroundColor:'#1c2333',borderColor:'#21283a',borderWidth:1,callbacks:{label:c=>`${c.raw} 則`}}},
-    scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4b5878',font:{size:10},maxRotation:0}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4b5878',font:{size:10}},beginAtZero:true}}}});
+  g.addColorStop(0,'rgba(37,99,235,.15)'); g.addColorStop(1,'rgba(37,99,235,0)');
+  cDaily = new Chart(ctx,{type:'line',data:{labels,datasets:[{data:counts,borderColor:'#3b82f6',backgroundColor:g,borderWidth:1.5,fill:true,tension:.4,pointRadius:counts.map(c=>c===peak?5:2),pointBackgroundColor:counts.map(c=>c===peak?'#3b82f6':'#ffffff'),pointBorderColor:'#3b82f6',pointBorderWidth:1.5}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{backgroundColor:'#ffffff',borderColor:'#e2e6ed',borderWidth:1,titleColor:'#0f172a',bodyColor:'#475569',callbacks:{label:c=>`${c.raw} 則`}}},
+    scales:{x:{grid:{color:'rgba(0,0,0,.06)'},ticks:{color:'#94a3b8',font:{size:10},maxRotation:0}},y:{grid:{color:'rgba(0,0,0,.06)'},ticks:{color:'#94a3b8',font:{size:10}},beginAtZero:true}}}});
 }
 
 function renderSentChart(data) {
   const ctx = document.getElementById('sentChart').getContext('2d');
   if (cSent) cSent.destroy();
   document.getElementById('dPct').textContent = (data.positive/data.total*100).toFixed(0)+'%';
-  cSent = new Chart(ctx,{type:'doughnut',data:{labels:['正面','中立','負面'],datasets:[{data:[data.positive,data.neutral,data.negative],backgroundColor:['rgba(16,185,129,.8)','rgba(99,102,241,.8)','rgba(239,68,68,.8)'],borderColor:'#0d1117',borderWidth:3,hoverOffset:3}]},
-    options:{responsive:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{backgroundColor:'#1c2333',borderColor:'#21283a',borderWidth:1}}}});
+  cSent = new Chart(ctx,{type:'doughnut',data:{labels:['正面','中立','負面'],datasets:[{data:[data.positive,data.neutral,data.negative],backgroundColor:['rgba(16,185,129,.8)','rgba(99,102,241,.8)','rgba(239,68,68,.8)'],borderColor:'#ffffff',borderWidth:3,hoverOffset:3}]},
+    options:{responsive:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{backgroundColor:'#ffffff',borderColor:'#e2e6ed',borderWidth:1,titleColor:'#0f172a',bodyColor:'#475569'}}}});
   document.getElementById('sentLegend').innerHTML = [{l:'正面',c:data.positive,col:'#10b981'},{l:'中立',c:data.neutral,col:'#818cf8'},{l:'負面',c:data.negative,col:'#ef4444'}]
     .map(i=>`<div class="legend-row"><span class="legend-left"><span class="legend-dot" style="background:${i.col}"></span>${i.l}</span><span class="legend-val">${i.c}</span></div>`).join('');
 }
@@ -483,7 +483,7 @@ function renderDeptChart(data) {
         borderColor:filtered.map(d=>DEPT_META.find(m=>m.id===d.id)?.color||'#64748b'),
         borderWidth:1.5,hoverOffset:4}]},
     options:{responsive:true,cutout:'55%',plugins:{
-      legend:{position:'right',labels:{color:'#94a3b8',font:{size:10},boxWidth:8,padding:10}},
+      legend:{position:'right',labels:{color:'#64748b',font:{size:10},boxWidth:8,padding:10}},
       tooltip:{backgroundColor:'#1c2333',borderColor:'#21283a',borderWidth:1,callbacks:{label:c=>`${c.label}: ${c.raw}則 (${(c.raw/data.total*100).toFixed(1)}%)`}}}}});
 }
 
@@ -505,8 +505,8 @@ async function renderCompareChart() {
         {label:'總則數',data:loaded.map(m=>cache[m].total),backgroundColor:'rgba(59,130,246,.2)',borderColor:'#3b82f6',borderWidth:1.5,borderRadius:3},
         {label:'正面',  data:loaded.map(m=>cache[m].positive),backgroundColor:'rgba(16,185,129,.45)',borderColor:'#10b981',borderWidth:1.5,borderRadius:3}
       ]},
-    options:{responsive:true,plugins:{legend:{labels:{color:'#4b5878',font:{size:10},boxWidth:8}},tooltip:{backgroundColor:'#1c2333',borderColor:'#21283a',borderWidth:1}},
-      scales:{x:{grid:{display:false},ticks:{color:'#4b5878',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4b5878',font:{size:10}},beginAtZero:true}}}});
+    options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',font:{size:10},boxWidth:8}},tooltip:{backgroundColor:'#ffffff',borderColor:'#e2e6ed',borderWidth:1,titleColor:'#0f172a',bodyColor:'#475569'}},
+      scales:{x:{grid:{display:false},ticks:{color:'#94a3b8',font:{size:10}}},y:{grid:{color:'rgba(0,0,0,.06)'},ticks:{color:'#94a3b8',font:{size:10}},beginAtZero:true}}}});
 }
 
 // ── Table ──
