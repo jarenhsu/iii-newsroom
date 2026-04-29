@@ -232,19 +232,6 @@ footer { text-align:center; padding:20px; font-size:10px; color:var(--text-muted
     </div>
   </div>
 
-  <div class="charts-row">
-    <div class="card"><div class="card-header"><span class="card-title">每日露出趨勢</span><span class="card-badge" id="peakBadge">–</span></div><canvas id="dailyChart" height="110"></canvas></div>
-    <div class="card"><div class="card-header"><span class="card-title">情緒分佈</span></div>
-      <div class="donut-wrap"><div class="donut-rel"><canvas id="sentChart" width="160" height="160" style="max-width:160px"></canvas><div class="donut-center"><div class="donut-center-num" id="dPct">–</div><div class="donut-center-label">正面率</div></div></div><div class="legend" id="sentLegend"></div></div>
-    </div>
-  </div>
-
-  <div class="charts-3">
-    <div class="card"><div class="card-header"><span class="card-title">部門露出佔比</span></div><canvas id="deptChart" height="200"></canvas></div>
-    <div class="card"><div class="card-header"><span class="card-title">媒體來源 Top 10</span></div><div class="bar-list" id="mediaList"></div></div>
-    <div class="card"><div class="card-header"><span class="card-title">月份對比</span><span class="card-badge">累積</span></div><canvas id="compareChart" height="200"></canvas></div>
-  </div>
-
   <div class="news-section">
     <div class="news-toolbar">
       <div class="news-toolbar-left">
@@ -266,6 +253,19 @@ footer { text-align:center; padding:20px; font-size:10px; color:var(--text-muted
       <div id="tableBody"></div>
       <div class="pagination" id="pagination"></div>
     </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card"><div class="card-header"><span class="card-title">每日露出趨勢</span><span class="card-badge" id="peakBadge">–</span></div><canvas id="dailyChart" height="110"></canvas></div>
+    <div class="card"><div class="card-header"><span class="card-title">情緒分佈</span></div>
+      <div class="donut-wrap"><div class="donut-rel"><canvas id="sentChart" width="160" height="160" style="max-width:160px"></canvas><div class="donut-center"><div class="donut-center-num" id="dPct">–</div><div class="donut-center-label">正面率</div></div></div><div class="legend" id="sentLegend"></div></div>
+    </div>
+  </div>
+
+  <div class="charts-3">
+    <div class="card"><div class="card-header"><span class="card-title">部門露出佔比</span></div><canvas id="deptChart" height="200"></canvas></div>
+    <div class="card"><div class="card-header"><span class="card-title">媒體來源 Top 10</span></div><div class="bar-list" id="mediaList"></div></div>
+    <div class="card"><div class="card-header"><span class="card-title">月份對比</span><span class="card-badge">累積</span></div><canvas id="compareChart" height="200"></canvas></div>
   </div>
 
 </div></div>
