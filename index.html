@@ -92,6 +92,21 @@ header { border-bottom:1px solid var(--border); padding:16px 0; position:sticky;
 .dept-detail-spacer { flex:1; }
 .dept-detail-pct { font-family:'Space Grotesk',sans-serif; font-size:11px; color:var(--text-muted); }
 
+/* HOT TOPICS */
+.hot-topics { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px 22px; display:none; margin-bottom:20px; }
+.hot-topics.show { display:block; }
+.hot-topics-title { font-size:12px; font-weight:600; color:var(--text); font-family:'Space Grotesk',sans-serif; letter-spacing:.3px; margin-bottom:14px; display:flex; align-items:center; gap:7px; }
+.hot-topics-title::before { content:''; width:3px; height:12px; border-radius:2px; background:var(--ht-color,var(--accent)); flex-shrink:0; }
+.hot-topic-row { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--border); }
+.hot-topic-row:last-child { border-bottom:none; }
+.hot-topic-rank { font-size:13px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--text-muted); width:20px; flex-shrink:0; text-align:center; }
+.hot-topic-rank.top3 { color:var(--ht-color,var(--accent)); }
+.hot-topic-title { flex:1; font-size:12px; color:var(--text); line-height:1.4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hot-topic-bar-wrap { width:120px; flex-shrink:0; display:flex; align-items:center; gap:8px; }
+.hot-topic-track { flex:1; height:5px; background:var(--surface3); border-radius:3px; overflow:hidden; }
+.hot-topic-fill { height:100%; border-radius:3px; background:var(--ht-color,var(--accent)); transition:width .6s cubic-bezier(.4,0,.2,1); }
+.hot-topic-count { font-size:11px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--ht-color,var(--accent)); width:30px; text-align:right; flex-shrink:0; }
+
 /* CHARTS */
 .charts-row { display:grid; grid-template-columns:2fr 1fr; gap:14px; margin-bottom:14px; }
 .charts-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:24px; }
@@ -209,6 +224,12 @@ footer { text-align:center; padding:20px; font-size:10px; color:var(--text-muted
       <div class="dept-detail-spacer"></div>
       <div class="dept-detail-pct" id="detailPct"></div>
     </div>
+
+    <!-- Hot Topics Ranking -->
+    <div class="hot-topics" id="hotTopics">
+      <div class="hot-topics-title" id="hotTopicsTitle">🔥 本部門熱門事件排行</div>
+      <div id="hotTopicsList"></div>
+    </div>
   </div>
 
   <div class="charts-row">
@@ -325,6 +346,7 @@ async function switchMonth(m) {
   document.querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('active',i===0));
   document.querySelectorAll('.month-tab').forEach(b=>b.classList.toggle('active',b.dataset.month===m));
   document.getElementById('deptDetail').classList.remove('show');
+  document.getElementById('hotTopics').classList.remove('show');
   document.querySelectorAll('.dept-card').forEach(c=>c.classList.remove('active'));
   const data = await fetchMonth(m);
   render(data);
@@ -378,11 +400,13 @@ function clickDept(id, el) {
   curPage = 1;
   document.querySelectorAll('.dept-card').forEach(c=>c.classList.remove('active'));
   const detail = document.getElementById('deptDetail');
+  const hotTopics = document.getElementById('hotTopics');
   if (!wasActive) {
     el.classList.add('active');
     const data = cache[curMonth];
     const d = data.depts.find(x=>x.id===id);
     const meta = DEPT_META.find(m=>m.id===id);
+    // Detail strip
     detail.classList.add('show');
     document.getElementById('detailBar').style.background = meta.color;
     document.getElementById('detailName').textContent = meta.name;
@@ -392,10 +416,34 @@ function clickDept(id, el) {
       <div class="dept-stat"><div class="dept-stat-num" style="color:#818cf8">${d.neutral}</div><div class="dept-stat-label">中立</div></div>
       <div class="dept-stat"><div class="dept-stat-num" style="color:#ef4444">${d.negative}</div><div class="dept-stat-label">負面</div></div>`;
     document.getElementById('detailPct').textContent = `占總露出 ${(d.total/data.total*100).toFixed(1)}%`;
+    // Hot topics
+    renderHotTopics(data, id, meta.color);
   } else {
     detail.classList.remove('show');
+    hotTopics.classList.remove('show');
   }
   renderTable(cache[curMonth]);
+}
+
+function renderHotTopics(data, deptId, color) {
+  const hotTopics = document.getElementById('hotTopics');
+  const clusters = (data.deptClusters || {})[deptId];
+  if (!clusters || clusters.length === 0) {
+    hotTopics.classList.remove('show');
+    return;
+  }
+  hotTopics.style.setProperty('--ht-color', color);
+  hotTopics.classList.add('show');
+  const max = clusters[0].count;
+  document.getElementById('hotTopicsList').innerHTML = clusters.map((c, i) => `
+    <div class="hot-topic-row">
+      <div class="hot-topic-rank ${i < 3 ? 'top3' : ''}">${i + 1}</div>
+      <div class="hot-topic-title" title="${esc(c.title)}">${esc(c.title)}</div>
+      <div class="hot-topic-bar-wrap">
+        <div class="hot-topic-track"><div class="hot-topic-fill" style="width:${(c.count/max*100).toFixed(0)}%"></div></div>
+        <div class="hot-topic-count">${c.count}則</div>
+      </div>
+    </div>`).join('');
 }
 
 function renderDailyChart(data) {
