@@ -195,7 +195,7 @@ footer { text-align:center; padding:24px; font-size:20px; color:var(--text-muted
 /* ── Particle canvas ── */
 #bgCanvas {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  pointer-events: none; z-index: 0; opacity: 0.55;
+  pointer-events: none; z-index: 0; opacity: 0.9;
 }
 
 /* ── Floating orbs ── */
@@ -921,7 +921,7 @@ init();
   const ctx = canvas.getContext('2d');
   let W, H, particles = [];
 
-  const COLORS = ['#5ab878','#d4b84a','#8ab4a0','#a8c860','#6aaa8a','#b87a30','#8a6ab8'];
+  const COLORS = ['#5ab878','#d4b84a','#8ab4a0','#a8c860','#6aaa8a','#e8c050','#9ad890','#b87a30'];
 
   function resize() {
     W = canvas.width  = window.innerWidth;
@@ -929,60 +929,77 @@ init();
   }
 
   function Particle() {
-    this.reset = function() {
-      this.x  = Math.random() * W;
-      this.y  = Math.random() * H;
-      this.r  = Math.random() * 2 + 0.5;
-      this.vx = (Math.random() - .5) * 0.4;
-      this.vy = (Math.random() - .5) * 0.4;
-      this.alpha = Math.random() * 0.5 + 0.15;
+    this.reset = function(born) {
+      this.x     = Math.random() * W;
+      this.y     = Math.random() * H;
+      this.r     = Math.random() * 3.5 + 1.2;
+      this.glow  = this.r * (3 + Math.random() * 4);
+      this.vx    = (Math.random() - .5) * 0.5;
+      this.vy    = (Math.random() - .5) * 0.5;
+      this.alpha = Math.random() * 0.55 + 0.35;
       this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
-      this.life  = 0;
-      this.maxLife = 180 + Math.random() * 200;
+      this.life  = born ? 0 : Math.random() * 220;
+      this.maxLife = 200 + Math.random() * 180;
     };
-    this.reset();
-    this.life = Math.random() * this.maxLife;
+    this.reset(false);
   }
 
   function init() {
     resize();
-    particles = Array.from({length: 90}, () => new Particle());
+    particles = Array.from({length: 140}, () => new Particle());
     window.addEventListener('resize', resize);
   }
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
+
     particles.forEach(p => {
       p.life++;
-      if (p.life > p.maxLife) p.reset();
-      const fade = p.life < 30 ? p.life/30 : p.life > p.maxLife-30 ? (p.maxLife-p.life)/30 : 1;
+      if (p.life > p.maxLife) p.reset(true);
+      const t = p.life / p.maxLife;
+      const fade = t < 0.12 ? t/0.12 : t > 0.88 ? (1-t)/0.12 : 1;
+      const a = p.alpha * fade;
+
+      // glow halo
+      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.glow);
+      grad.addColorStop(0,   p.color + 'cc');
+      grad.addColorStop(0.3, p.color + '55');
+      grad.addColorStop(1,   p.color + '00');
+      ctx.globalAlpha = a * 0.7;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.glow, 0, Math.PI*2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // core dot
+      ctx.globalAlpha = a;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
       ctx.fillStyle = p.color;
-      ctx.globalAlpha = p.alpha * fade;
       ctx.fill();
+
       p.x += p.vx;
       p.y += p.vy;
-      if (p.x < 0) p.x = W;
-      if (p.x > W) p.x = 0;
-      if (p.y < 0) p.y = H;
-      if (p.y > H) p.y = 0;
+      if (p.x < -20) p.x = W+20;
+      if (p.x > W+20) p.x = -20;
+      if (p.y < -20) p.y = H+20;
+      if (p.y > H+20) p.y = -20;
     });
-    ctx.globalAlpha = 1;
 
-    // Draw subtle connecting lines between nearby particles
+    // connecting lines
+    ctx.globalAlpha = 1;
     for (let i = 0; i < particles.length; i++) {
       for (let j = i+1; j < particles.length; j++) {
         const dx = particles[i].x - particles[j].x;
         const dy = particles[i].y - particles[j].y;
         const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < 100) {
+        if (dist < 120) {
           ctx.beginPath();
           ctx.moveTo(particles[i].x, particles[i].y);
           ctx.lineTo(particles[j].x, particles[j].y);
           ctx.strokeStyle = particles[i].color;
-          ctx.globalAlpha = (1 - dist/100) * 0.08;
-          ctx.lineWidth = 0.6;
+          ctx.globalAlpha = (1 - dist/120) * 0.18;
+          ctx.lineWidth = 0.8;
           ctx.stroke();
         }
       }
