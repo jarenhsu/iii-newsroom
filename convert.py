@@ -68,7 +68,8 @@ DELETE_RULES = [
     # 求職/面試
     (r'精選面試分享|面試趣', '求職面試'),
     # 政治/社會無關
-    (r'高虹安|柯文哲|黃國昌|李貞秀|陳昭姿|許忠信|陳智菡|韓國瑜|侯友宜', '政治人物'),
+    (r'柯文哲|黃國昌(?!.*資策會)|李貞秀|陳昭姿|許忠信|陳智菡|韓國瑜|侯友宜', '政治人物'),
+    (r'高虹安(?!.*資策會)', '高虹安無關資策會'),
     (r'立委.*宣誓就職|新科立委|兩年條款|直言最難溝通|對綠白合作表態', '政治事件'),
     # 其他機構主角（非資策會）
     (r'^(?=.*勤業眾信)(?!.*資策會)', '勤業眾信'),
@@ -124,11 +125,45 @@ def sim(a, b):
     if not sa or not sb: return 0
     return len(sa & sb) / len(sa | sb)
 
+# 明確轉載標記（內文中有這些 → 表示該篇是轉載自別家媒體，直接刪除）
+REPOST_MARKERS = [
+    r'(?:本文|全文)?轉載自\s*[《〔\[]?[\u4e00-\u9fff\w]+[》〕\]]?',
+    r'資料來源[：:]\s*[\u4e00-\u9fff\w]{2,15}(?:新聞|報|網|社|時報)',
+    r'原文(?:刊載|出處|來源)[：:於]?\s*[\u4e00-\u9fff\w]{2,15}',
+]
+
+def is_repost(content):
+    """
+    判斷該篇新聞是否為轉載。
+    只有內文中明確標示來源為別家媒體，才視為轉載並刪除。
+    若內文和其他媒體一樣但沒有標明轉載，則視為獨立發布，保留。
+    """
+    if not content:
+        return False
+    text = content[:400]  # 只看前400字，來源標記通常在文首或文尾
+    for pat in REPOST_MARKERS:
+        if re.search(pat, text):
+            return True
+    return False
+
 def dedup(rows, threshold=0.85):
+    """
+    去重邏輯：
+    - 只刪除內文有明確標示「轉載自某媒體」的新聞
+    - 相同內容但各自獨立發布（新聞稿）的，全部保留
+    - 沒有內文時用標題相似度（>85%）作為 fallback
+    """
     kept = []
     for row in rows:
-        if not any(sim(row['title'], k['title']) >= threshold for k in kept):
-            kept.append(row)
+        content = row.get('content', '')
+        if is_repost(content):
+            continue  # 明確標示轉載 → 刪除
+        # 無明確轉載標記：保留（即使內容和別篇一樣，視為獨立發布）
+        # 但若完全沒有內文，用標題相似度避免完全空白的重複
+        if not content.strip():
+            if any(sim(row['title'], k['title']) >= threshold for k in kept):
+                continue
+        kept.append(row)
     return kept
 
 def cluster_news(news_list, threshold=0.2):
