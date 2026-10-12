@@ -517,7 +517,9 @@ function render(data) {
   document.getElementById('pageSubtitle').textContent =
     dr.length ? `${dr[0].date} ～ ${dr[dr.length-1].date}　共 ${data.total} 則新聞露出` : `共 ${data.total} 則`;
   document.getElementById('kTotal').textContent = data.total.toLocaleString();
-  document.getElementById('kDept').textContent = `${data.depts.filter(d=>d.id!=='other'&&d.total>0).length} 個業務單位有露出`;
+  const _monthNum = parseInt((data.month||'').split('-')[1]||'0');
+  const _deptFilter = data.depts.filter(d=>d.id!=='other'&&d.total>0&&!(_monthNum>=8&&d.id==='software'));
+  document.getElementById('kDept').textContent = `${_deptFilter.length} 個業務單位有露出`;
   document.getElementById('kPos').textContent = data.positive;
   document.getElementById('kPosPct').textContent = `佔比 ${(data.positive/data.total*100).toFixed(1)}%`;
   document.getElementById('kNeu').textContent = data.neutral;
@@ -534,8 +536,12 @@ function render(data) {
 }
 
 function renderDeptCards(data) {
-  const max = Math.max(...data.depts.map(d=>d.total),1);
-  document.getElementById('deptCards').innerHTML = data.depts.map(d => {
+  // 方案一：軟體院與AI院於2026年8月合併，8月起軟體院卡片不顯示
+  const monthNum = parseInt((data.month||'').split('-')[1]||'0');
+  const hideSoftware = monthNum >= 8;
+  const visibleDepts = hideSoftware ? data.depts.filter(d=>d.id!=='software') : data.depts;
+  const max = Math.max(...visibleDepts.map(d=>d.total),1);
+  document.getElementById('deptCards').innerHTML = visibleDepts.map(d => {
     const meta = DEPT_META.find(m=>m.id===d.id)||{color:'#64748b',short:d.id};
     const pct = (d.total/max*100).toFixed(0);
     const posW = d.total?(d.positive/d.total*100).toFixed(0):0;
@@ -550,6 +556,10 @@ function renderDeptCards(data) {
         <div class="mini-dot" style="background:#ef4444;width:${100-posW-neuW}%"></div>
       </div></div>`;
   }).join('');
+  // 更新業務單位露出數（排除軟體院）
+  const activeCount = visibleDepts.filter(d=>d.id!=='other'&&d.total>0).length;
+  const kDept = document.getElementById('kDept');
+  if (kDept) kDept.textContent = `${activeCount} 個業務單位有露出`;
 }
 
 function clickDept(id, el) {
