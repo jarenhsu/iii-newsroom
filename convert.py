@@ -4,9 +4,15 @@
 用法：python convert.py <xlsx檔案1> [檔案2 ...]
 支援多檔合併：python convert.py 5月_1.xlsx 5月_2.xlsx 5月_3.xlsx
 
-篩選邏輯學習自人工分類（1-4月），自動過濾無關新聞並分類部門。
+篩選邏輯學習自人工分類（1-6月），自動過濾無關新聞並分類部門。
+關鍵字無法判斷時，自動呼叫 Claude API + 網路搜尋輔助分類。
+
+需要 AI 分類時，請先設定環境變數：
+  export ANTHROPIC_API_KEY=你的金鑰
+並安裝套件：
+  pip install anthropic
 """
-import sys, json, re
+import sys, json, re, os
 from pathlib import Path
 from collections import defaultdict, Counter
 import pandas as pd
@@ -34,37 +40,99 @@ DEPTS_KW = [
 ]
 
 TOPIC_RULES = [
+    # ── 數轉院：數位轉型、智慧城市、AIoT、無人機、供應鏈平台 ──
     (["digital"],   ["ITS世界大會","ITS World","智慧交通","智慧運輸","智慧城市","智慧城鄉",
                      "AI賦能在地","數位發展部","智慧示範城市","數位治理","AIoT",
                      "創新匯流","創業歸故里","智慧城市展","跨品牌設備",
-                     "FinTechSpace","金融科技創新園區","水靈科技","AI主動節能","黑晶"]),
+                     "FinTechSpace","金融科技創新園區","水靈科技","AI主動節能","黑晶",
+                     # 新增（學習自5-6月）
+                     "無人機.*聯盟","台灣無人機聯盟","智慧次系統.*供應鏈","4SA平台",
+                     "CoWiSH","共願開市","愛迪生獎.*資策會","資策會.*愛迪生獎",
+                     "G REIGNS.*資策會","資策會.*G REIGNS",
+                     "Open RAN.*資策會","資策會.*Open RAN",
+                     "Interop Tokyo.*資策會","資策會.*Interop",
+                     "大南方.*AI","南部.*AI.*健康","智慧健康展",
+                     "AI Infrastructure.*資策會","資策會.*AI Infrastructure",
+                     "COMPUTEX.*資策會","資策會.*COMPUTEX",
+                     "Edge AI.*聯盟.*資策會","資策會.*Edge AI.*聯盟"]),
+
+    # ── 軟體院：軟體技術、通訊標準驗證、車輛AI驗證 ──
     (["software"],  ["軟體開發","開放原始碼","雲端服務","軟體架構","Spring Boot",
-                     "AI.*RAN","開放網路","電信軟體","Open RAN"]),
-    (["ai"],        ["AI Agent","多模態","LLM","生成式AI","AI.*算力","矽光子","CPO.*AI",
-                     "製造業AI","全球電信商大會","MWC.*AI","宏達電.*AI眼鏡","AI眼鏡.*資策會",
-                     "資策會.*AI眼鏡","HTC.*資策會","智慧眼鏡.*生態系","AI能量登錄",
-                     "群電.*資策會","無人機.*資策會","張育誠"]),
+                     "電信軟體",
+                     # Open RAN 若沒有 資策會 資訊歸軟體院；若有資策會則上面數轉院先判
+                     "DEKRA.*資策會","資策會.*DEKRA","智慧車輛.*AI.*驗證",
+                     "STI十大關鍵技術","Agentic AI.*通訊","新通訊.*資策會"]),
+
+    # ── AI院：AI應用開發、智慧系統落地 ──
+    (["ai"],        ["人工智慧研究院","AI院",
+                     "AI Agent","多模態","LLM","矽光子","CPO.*AI",
+                     "全球電信商大會","MWC.*AI",
+                     "宏達電.*AI眼鏡","AI眼鏡.*資策會","資策會.*AI眼鏡","HTC.*資策會",
+                     "智慧眼鏡.*生態系","AI能量登錄","群電.*資策會","張育誠",
+                     # 新增（學習自5-6月）
+                     "中科院.*資策會.*無人機","資策會.*中科院.*AI",
+                     "拉菲爾.*AI","AI.*手術室","童.*醫院.*AI.*資策會",
+                     "智慧瓦斯.*資策會","資策會.*智慧瓦斯",
+                     "AI.*認養.*資策會","新北.*AI.*資策會",
+                     "技職黑客松.*資策會","資策會.*技職黑客松",
+                     "高餐大.*資策會","資策會.*高餐大",
+                     "陽明交大.*資策會","資策會.*共鑑慧眼",
+                     "永擎.*AI.*資策會","台灣.*AI.*治理.*合規",
+                     "宜蘭大學.*AI.*資策會","AWS.*資策會.*AI",
+                     "Edge AI.*聯盟.*資策會","資策會.*Edge AI.*聯盟",
+                     "青年局.*資策會.*AI院","資策會.*AI院.*MOU",
+                     "南台灣.*媒體人才.*資策會","新媒體人才.*資策會"]),
+
+    # ── 資安所：資安防護、CMMC、資安認證 ──
     (["cybersec"],  ["資安署","資通安全署","中小企業資安","資安輔導","資安健檢","資安攻擊",
-                     "零信任","資安治理","上市.*資安","網路攻擊"]),
-    (["education"], ["就業博覽會","AI人才","數位人才","先鋒教育","致理科大","人力轉型",
+                     "零信任","資安治理","上市.*資安","網路攻擊",
+                     # 新增
+                     "CMMC.*資策會","資策會.*CMMC","資策會.*中科院.*資安",
+                     "F5.*資策會","NetApp.*Cisco.*資策會","CRA.*資策會"]),
+
+    # ── 教研所：人才培育、AI課程、數位學習 ──
+    (["education"], ["就業博覽會","數位人才","先鋒教育","致理科大","人力轉型",
                      "AI Coding","提示工程","課程.*資策會","資策會.*課程","AI.*碩士",
                      "數位學習","職能培育","iPAS","產業新尖兵","勞動部.*資策會",
-                     "資策會.*勞動","TIPS.*頒證","文化大學.*資策會","長榮大學.*資策會"]),
-    (["mic"],       ["產業報告","科技趨勢","MWC.*六大","AI眼鏡.*出貨","智慧眼鏡.*出貨",
+                     "資策會.*勞動","TIPS.*頒證","文化大學.*資策會","長榮大學.*資策會",
+                     # 新增（學習自5-6月）
+                     "AI人才.*資策會","資策會.*AI人才",
+                     "AI.*認證.*資策會","資策會.*認證.*AI",
+                     "育達科大.*資策會","資策會.*育達",
+                     "未來人才.*資策會","資策會.*白皮書.*人才",
+                     "資策會.*生成式AI.*認證","生成式AI.*人才.*資策會",
+                     "1111.*資策會","資策會.*1111"]),
+
+    # ── MIC：產業分析、市場報告、COMPUTEX 產業觀察 ──
+    (["mic"],       ["產業情報研究所","MIC","IEK",
+                     "產業報告","科技趨勢","MWC.*六大","AI眼鏡.*出貨","智慧眼鏡.*出貨",
                      "十大重點科技","長照.*產業","健康照護.*產業","量子科技.*市場",
-                     "AI.*競爭版圖","聯電.*晶圓","半導體.*分析","台達.*光寶","側寫黃欽勇"]),
-    (["law"],       ["資料治理","個人資料","個資","Grab.*foodpanda","中資.*審查",
+                     "AI.*競爭版圖","聯電.*晶圓","半導體.*分析","台達.*光寶","側寫黃欽勇",
+                     # 新增（學習自5-6月）
+                     "COMPUTEX.*產業.*分析","COMPUTEX.*Best Choice.*資策會",
+                     "Grab.*資策會.*市場","外送.*資策會.*分析",
+                     "供應鏈.*效率.*資策會","電商.*AI.*資策會",
+                     "證交所.*資策會.*創新板","資策會.*看旺.*創新板",
+                     "伺服器.*產業.*資策會","AIDC.*資策會",
+                     "AI晶片.*資策會","資策會.*AI.*算力.*市場"]),
+
+    # ── 科法所：法律、個資、治理 ──
+    (["law"],       ["科技法律研究所","科法所",
+                     "資料治理","個人資料","個資","中資.*審查",
                      "闢謠","事實查核","Disinformation","不實資訊","商標.*品牌",
                      "雀巢.*撞名","顏慧欣","科技法律","連鎖加盟","品牌.*合規",
-                     "智慧財產.*行銷","歐盟.*經濟安全","中資.*疑慮"]),
+                     "智慧財產.*行銷","歐盟.*經濟安全","中資.*疑慮",
+                     # 注意：Grab 相關歸 MIC，不歸科法所
+                     "Global CBPR","個資.*驗證.*資策會","資策會.*個資.*驗證",
+                     "CGT.*資策會","資策會.*CGT"]),
 ]
 
-# ── 刪除規則（學習自 1-4 月人工篩選）────────────────────────────────────────
+# ── 刪除規則（學習自 1-6 月人工篩選）─────────────────────────────────────────
 DELETE_RULES = [
     # 股市/投資平台格式
     (r'^\d{4}[A-Za-z\u4e00-\u9fff]{2,6}[-\s]', '股市格式標題'),
     (r'MoneyDJ新聞\d{4}', '股市格式'),
-    (r'CMoney|PChome股市|富聯網|聚財網|旺得富|Cmoney 投資', '股市平台'),
+    (r'CMoney|PChome股市|富聯網|聚財網|旺得富|Cmoney 投資|聚財網-財經新聞', '股市平台'),
     # 求職/面試
     (r'精選面試分享|面試趣', '求職面試'),
     # 政治/社會無關
@@ -82,16 +150,33 @@ DELETE_RULES = [
     (r'即時新聞】攜手資策會建構AI眼鏡生態系$', '無內容'),
     # 無關科技話題
     (r'月球.*(?:飯店|核反應器)|核能登月', '無關話題'),
-    # 低品質媒體轉載（無新聞價值）
+    # 低品質媒體
     (r'束褲3C團|SOGI手機王', '低品質媒體'),
     # 其他課程廣告（非資策會）
     (r'【AI必學】Google Sheets Gemini', '他機構課程廣告'),
+    # 新增（學習自5-6月）
+    (r'大台灣新聞網.*洪毓祥', '低品質轉載'),
+    (r'洪毓祥.*兼職.*資策會拔官', '人事敏感'),
+    (r'洪毓祥曾因兼職未申報被資策會拔官', '人事敏感'),
+    (r'翻爆.*《生醫股》|豐雲學堂.*《生醫股》', '股市轉載格式'),
+    (r'蕃新聞.*創新驅動.*數位紅利', '無關轉載'),
+    (r'台灣人壽.*Curves.*外溢保單', '無關保險廣告'),
+    (r'情傷族.*醫美|失戀醫美', '無關話題'),
+    (r'使用「這軟體」聊天注意', '無關話題'),
+    (r'公共衛生高峰論壇', '無關活動'),
+    (r'愛迪生獎.*資策會|資策會.*愛迪生獎', '獎項不計入露出'),
+    (r'《生醫股》.*盛弘|盛弘.*《生醫股》', '股市格式'),
+    (r'盛弘醫藥.*資策會.*智慧日照', '企業合作非主要露出'),
+    (r'高教薪資結構調整', '無關話題'),
+    (r'Edge AI.*聯盟.*資策會.*群聯.*宏碁', '重複轉載格式'),
+    (r'XR技術奪愛迪生獎', '獎項不計入'),
 ]
 
 KEEP_EXCEPTIONS = [
     r'資策會.*資安署|資安署.*資策會',
     r'資策會.*工研院|工研院.*資策會',
     r'資策會.*商研院|商研院.*資策會',
+    r'資策會.*中科院|中科院.*資策會',
 ]
 
 # ── 核心函式 ─────────────────────────────────────────────────────────────────
@@ -115,7 +200,81 @@ def classify(title, content):
     for dept_ids, keywords in TOPIC_RULES:
         for kw in keywords:
             if re.search(kw, text): return dept_ids[0]
-    return "hq"
+    return None  # 無法判斷，交給 AI
+
+def classify_with_ai(unclassified_rows, api_key=None):
+    """
+    對關鍵字無法判斷部門的新聞，呼叫 Claude API + 網路搜尋來分類。
+    unclassified_rows: list of {'idx': int, 'title': str, 'content': str}
+    回傳: {idx: dept_id}
+    """
+    try:
+        import anthropic
+    except ImportError:
+        print("⚠️  請先安裝：pip install anthropic")
+        return {r['idx']: 'hq' for r in unclassified_rows}
+
+    key = api_key or os.environ.get('ANTHROPIC_API_KEY', '')
+    if not key:
+        print("⚠️  未設定 ANTHROPIC_API_KEY，跳過 AI 分類")
+        return {r['idx']: 'hq' for r in unclassified_rows}
+
+    client = anthropic.Anthropic(api_key=key)
+    results = {}
+    BATCH = 15
+
+    SYSTEM = """你是資策會新聞分類專家。以下是資策會的部門及其業務範疇：
+
+- digital（數位轉型研究院/數轉院）：數位轉型、智慧城市、AIoT、無人機、供應鏈平台、智慧交通、ITS、COMPUTEX展覽活動、國際合作展覽
+- software（軟體技術研究院/軟體院）：軟體技術、通訊標準、車輛AI驗證、DEKRA合作、ITS專案辦公室、Open RAN（若資策會主導）
+- ai（人工智慧研究院/AI院）：AI應用開發與落地、智慧系統整合、Edge AI聯盟、AI認證合作、產學MOU
+- cybersec（資安科技研究所/資安所）：資安防護、CMMC認證、資安輔導、資安治理
+- education（數位教育研究所/教研所）：人才培育、AI課程認證、數位學習、產學合作教育
+- mic（產業情報研究所/MIC）：產業分析報告、市場研究、科技趨勢預測、COMPUTEX產業觀察、證交所合作分析
+- law（科技法律研究所/科法所）：科技法律、資料治理、個資保護、事實查核、商標品牌
+- hq（其他/機構整體）：資策會整體形象、跨部門活動、無法明確歸屬特定部門
+
+請利用網路搜尋查詢新聞相關資訊，判斷每則新聞最可能屬於哪個部門。
+
+回傳純 JSON 陣列，格式：[{"idx": 0, "dept": "mic", "reason": "MIC產業分析"}]
+不要包含任何說明文字或 markdown。"""
+
+    for i in range(0, len(unclassified_rows), BATCH):
+        chunk = unclassified_rows[i:i+BATCH]
+        batch_num = i//BATCH + 1
+        total_batches = (len(unclassified_rows)-1)//BATCH + 1
+        print(f"  🤖 AI 分類 batch {batch_num}/{total_batches} ({len(chunk)} 則)...", end=' ', flush=True)
+
+        items = [{"idx": r['idx'], "title": r['title'], "content": r['content'][:200]} for r in chunk]
+        user_msg = f"請搜尋並分類以下新聞（回傳純 JSON）：\n{json.dumps(items, ensure_ascii=False)}"
+
+        try:
+            resp = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=1000,
+                system=SYSTEM,
+                tools=[{"type": "web_search_20250305", "name": "web_search"}],
+                messages=[{"role": "user", "content": user_msg}]
+            )
+            # 取出所有 text 內容
+            text = ' '.join(b.text for b in resp.content if hasattr(b, 'text') and b.text)
+            # 清理 JSON
+            text = text.strip()
+            if '```' in text:
+                text = text.split('```')[1]
+                if text.startswith('json'): text = text[4:]
+            parsed = json.loads(text.strip())
+            for item in parsed:
+                results[item['idx']] = item.get('dept', 'hq')
+            print(f"✓ ({len(parsed)} 則)")
+        except Exception as e:
+            print(f"✗ ({e})")
+            for r in chunk:
+                results[r['idx']] = 'hq'
+
+        import time; time.sleep(0.5)
+
+    return results
 
 def ngrams(text, n=4):
     t = str(text); return set(t[i:i+n] for i in range(len(t)-n+1))
@@ -229,9 +388,34 @@ def convert(*xlsx_paths):
             del_stats['deleted'] += 1
             continue
         rows_pass.append({'title':title,'content':content,'website':website,
-                          'date':date,'sentiment':sent,'url':url,'dept':classify(title,content)})
+                          'date':date,'sentiment':sent,'url':url,
+                          'dept':classify(title,content)})  # None = 待 AI 分類
 
     rows_final = dedup(rows_pass, threshold=0.85)
+
+    # AI 輔助分類：對關鍵字無法判斷（dept=None）的新聞，呼叫 Claude API + 網路搜尋
+    unclassified = [{'idx': i, 'title': r['title'], 'content': r['content']}
+                    for i, r in enumerate(rows_final) if r['dept'] is None]
+
+    if unclassified:
+        api_key = os.environ.get('ANTHROPIC_API_KEY', '')
+        if api_key:
+            print(f"🔍 關鍵字無法判斷：{len(unclassified)} 則，啟動 AI 網路搜尋分類...")
+            ai_results = classify_with_ai(unclassified, api_key)
+            for i, r in enumerate(rows_final):
+                if r['dept'] is None:
+                    r['dept'] = ai_results.get(i, 'hq')
+            ai_count = sum(1 for r in rows_final if r['dept'] != 'hq')
+            print(f"   AI 分類完成，{len(unclassified)} 則中成功判斷部門")
+        else:
+            print(f"⚠️  {len(unclassified)} 則無法判斷部門（設定 ANTHROPIC_API_KEY 以啟用 AI 分類）")
+            for r in rows_final:
+                if r['dept'] is None: r['dept'] = 'hq'
+    else:
+        # 確保沒有 None
+        for r in rows_final:
+            if r['dept'] is None: r['dept'] = 'hq'
+
     print(f"✅ 過濾後：{len(rows_pass)} 則  去重後：{len(rows_final)} 則（刪除 {del_stats['deleted']} 則）")
 
     # 組裝 JSON
